@@ -16,7 +16,7 @@ namespace Api_proj.Models
         public string Description { get; set; } = string.Empty;
 
         public float DistanceKm { get; set; }
-
+        //
         public float StartElevation { get; set; }
 
         public float EndElevation { get; set; }
