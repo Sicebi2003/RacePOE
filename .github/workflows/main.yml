@@ -20,7 +20,7 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore PATH_TO_YOUR_PROJECT/PROJECT_NAME.csproj
+      run: dotnet restore Api_proj.csproj
 
     - name: Build project
-      run: dotnet build PATH_TO_YOUR_PROJECT/PROJECT_NAME.csproj --configuration Release --no-restore
+      run: dotnet build Api_proj.csproj --configuration Release --no-restore
