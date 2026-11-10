@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -21,6 +22,9 @@ namespace Api_proj.Models
         public double Distance { get; set; }
         public string EventType { get; set; } = string.Empty;
 
+        // Stores the event banner filename.
+        public string? BannerImage { get; set; }
+
         public int? OrganiserId { get; set; }
 
         [ForeignKey("OrganiserId")]
@@ -29,7 +33,6 @@ namespace Api_proj.Models
 
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
-        // Navigation property for categories
         [JsonIgnore]
         public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
 

@@ -21,6 +21,9 @@ namespace Api_proj.Models
 
         public int RoleId { get; set; }
 
+        // Stores the profile image filename.
+        public string? ProfileImage { get; set; }
+
         [ForeignKey("RoleId")]
         public Role Role { get; set; }
 

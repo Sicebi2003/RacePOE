@@ -23,4 +23,4 @@ namespace Api_proj.Models
 
         public string GPXData { get; set; } = string.Empty;
     }
-}
+}//

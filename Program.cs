@@ -43,7 +43,7 @@ builder.Services.AddDbContext<ApplicationDBContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
-var app = builder.Build();//
+var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
@@ -52,6 +52,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Allow images saved in the API wwwroot folder to be displayed.
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();

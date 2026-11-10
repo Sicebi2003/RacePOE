@@ -14,10 +14,14 @@ namespace Api_proj.Controllers
     public class EventsController : ControllerBase
     {
         private readonly ApplicationDBContext _context;
+        private readonly IWebHostEnvironment _environment;
 
-        public EventsController(ApplicationDBContext context)
+        public EventsController(
+            ApplicationDBContext context,
+            IWebHostEnvironment environment)
         {
             _context = context;
+            _environment = environment;
         }
 
         private int? GetCurrentUserId()
@@ -90,6 +94,7 @@ namespace Api_proj.Controllers
             eventItem.EventId = 0;
             eventItem.OrganiserId = organiserId.Value;
             eventItem.Organiser = null;
+            eventItem.BannerImage = null;
             eventItem.CreatedDate = DateTime.Now;
 
             _context.Events.Add(eventItem);
@@ -101,6 +106,93 @@ namespace Api_proj.Controllers
                 new { id = eventItem.EventId },
                 eventItem
             );
+        }
+
+        // POST: api/events/5/banner
+        [HttpPost("{id}/banner")]
+        [Authorize(Roles = "Organiser")]
+        public async Task<IActionResult> UploadEventBanner(
+            int id,
+            IFormFile banner)
+        {
+            int? organiserId = GetCurrentUserId();
+
+            if (organiserId == null)
+                return Unauthorized();
+
+            if (banner == null || banner.Length == 0)
+                return BadRequest("Please select a banner image.");
+
+            if (banner.Length > 5 * 1024 * 1024)
+                return BadRequest("The banner image must be smaller than 5 MB.");
+
+            string extension = Path.GetExtension(banner.FileName).ToLowerInvariant();
+
+            string[] allowedExtensions =
+            {
+                ".jpg", ".jpeg", ".png", ".webp"
+            };
+
+            if (!allowedExtensions.Contains(extension))
+                return BadRequest("Only JPG, JPEG, PNG and WEBP images are allowed.");
+
+            var eventItem = await _context.Events
+                .FirstOrDefaultAsync(e => e.EventId == id);
+
+            if (eventItem == null)
+                return NotFound("Event not found.");
+
+            if (eventItem.OrganiserId != organiserId.Value)
+                return Forbid();
+
+            string webRootPath = _environment.WebRootPath
+                ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
+
+            string folderPath = Path.Combine(
+                webRootPath,
+                "event-images"
+            );
+
+            Directory.CreateDirectory(folderPath);
+
+            string fileName = Guid.NewGuid().ToString() + extension;
+
+            string filePath = Path.Combine(folderPath, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await banner.CopyToAsync(stream);
+            }
+
+            string? oldImage = eventItem.BannerImage;
+
+            eventItem.BannerImage = fileName;
+
+            await _context.SaveChangesAsync();
+
+            // Delete the previous banner after saving the new one.
+            if (!string.IsNullOrWhiteSpace(oldImage))
+            {
+                string oldFileName = Path.GetFileName(oldImage);
+
+                string oldFilePath = Path.Combine(
+                    folderPath,
+                    oldFileName
+                );
+
+                if (System.IO.File.Exists(oldFilePath))
+                    System.IO.File.Delete(oldFilePath);
+            }
+
+            string imageUrl =
+                $"{Request.Scheme}://{Request.Host}/event-images/{fileName}";
+
+            return Ok(new
+            {
+                message = "Event banner uploaded successfully.",
+                bannerImage = fileName,
+                imageUrl = imageUrl
+            });
         }
 
         // PUT: api/events/5
@@ -160,7 +252,6 @@ namespace Api_proj.Controllers
             if (eventItem.OrganiserId != organiserId.Value)
                 return Forbid();
 
-            // Prevent deletion when the event has existing enrolments.
             if (eventItem.Enrolments.Any())
             {
                 return BadRequest(
@@ -173,6 +264,24 @@ namespace Api_proj.Controllers
             _context.Events.Remove(eventItem);
 
             await _context.SaveChangesAsync();
+
+            // Delete the event banner file.
+            if (!string.IsNullOrWhiteSpace(eventItem.BannerImage))
+            {
+                string webRootPath = _environment.WebRootPath
+                    ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
+
+                string fileName = Path.GetFileName(eventItem.BannerImage);
+
+                string imagePath = Path.Combine(
+                    webRootPath,
+                    "event-images",
+                    fileName
+                );
+
+                if (System.IO.File.Exists(imagePath))
+                    System.IO.File.Delete(imagePath);
+            }
 
             return Ok(new
             {

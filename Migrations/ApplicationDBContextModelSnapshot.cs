@@ -19,7 +19,7 @@ namespace Api_proj.Migrations
                 .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);//
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 #pragma warning restore 612, 618
         }
     }
